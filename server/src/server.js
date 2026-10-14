@@ -62,9 +62,10 @@ const jobs = setInterval(async () => {
   }
 }, 60000);
 jobs.unref();
-server.listen(config.port, config.host, () =>
-  console.log(`Lifeline API ready at http://127.0.0.1:${config.port}`),
-);
+server.listen(config.port, config.host, () => {
+  const address = server.address();
+  console.log(`Lifeline API listening on ${address.address}:${address.port}`);
+});
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, async () => {
     clearInterval(jobs);

@@ -4,16 +4,17 @@ Executed locally with Node.js 26.3.0, MongoDB Community 7.0.24 and installed Goo
 
 A follow-up check using Node.js 22.23.3 passed the production build and all 30 regression tests, including credential redaction, Render-only IP lookup, authentication error codes and IP-service failure handling for startup diagnostics. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; the failing Render deployment still needs a successful redeploy to confirm hosted connectivity.
 
-| Check                              | Result                                                                                                         |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `npm run build`                    | Passed; React production assets generated                                                                      |
-| `npm test`                         | 30 tests passed across 4 files                                                                                 |
-| `npm run test:e2e`                 | 8 tests passed across desktop and mobile projects                                                              |
-| MongoDB Atlas connection           | Connected and pinged the `lifeline` database using the ignored `.env`; no demo seed or tests ran against Atlas |
-| `npm audit --audit-level=moderate` | 0 known vulnerabilities                                                                                        |
-| Production HTTP smoke checks       | Home, SPA deep link, health API, empty hospital API, robots and sitemap returned 200; unknown API returned 404 |
-| Production CSRF cookie             | Secure attribute present                                                                                       |
-| Production data guard              | Refuses databases containing demonstration records                                                             |
+| Check                              | Result                                                                                                                                                         |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build`                    | Passed; React production assets generated                                                                                                                      |
+| `npm test`                         | 30 tests passed across 4 files                                                                                                                                 |
+| `npm run test:e2e`                 | 8 tests passed across desktop and mobile projects                                                                                                              |
+| MongoDB Atlas connection           | Connected and pinged the `lifeline` database using the ignored `.env`; no demo seed or tests ran against Atlas                                                 |
+| `npm audit --audit-level=moderate` | 0 known vulnerabilities                                                                                                                                        |
+| Production HTTP smoke checks       | Home, SPA deep link, health API, empty hospital API, robots and sitemap returned 200; unknown API returned 404                                                 |
+| Production CSRF cookie             | Secure attribute present                                                                                                                                       |
+| Production data guard              | Refuses databases containing demonstration records                                                                                                             |
+| Render host/port smoke checks      | Actual Node 22 production servers bound to `0.0.0.0` and honored `PORT` with both `HOST=localhost` and `HOST=127.0.0.1`; health and hospital APIs returned 200 |
 
 The database tests exercised actual Express → MongoDB operations, including private documents, hospital/requirement verification, cross-account permissions, appointment confirmation and donation completion, concurrent event-capacity limits, sponsorship authorization, independent consent, export/deletion requests, token reuse and logout. They also verify that registration generates no verification email/token when email verification is disabled, existing unverified donors can book and join drives, and single-use email verification still works when explicitly enabled.
 
