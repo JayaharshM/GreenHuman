@@ -2,6 +2,8 @@
 
 Executed locally with Node.js 26.3.0, MongoDB Community 7.0.24 and installed Google Chrome.
 
+A follow-up check using Node.js 22.23.3 passed the production build and all 26 regression tests. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; the failing Render deployment still needs a successful redeploy to confirm hosted connectivity.
+
 | Check                              | Result                                                                                                         |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `npm run build`                    | Passed; React production assets generated                                                                      |

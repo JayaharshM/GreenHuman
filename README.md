@@ -4,7 +4,7 @@ A locally working MERN blood-donation coordination platform with an original edi
 
 ## Run locally
 
-Requires Node.js 22.12+ and MongoDB Community 7+ (or a MongoDB Atlas connection).
+Use Node.js 22 LTS (22.12+) and MongoDB Community 7+ (or a MongoDB Atlas connection). `.node-version`, the Render Blueprint and Dockerfile select Node 22 for deployment.
 
 ```sh
 npm install

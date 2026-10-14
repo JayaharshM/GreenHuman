@@ -180,7 +180,9 @@ Add these in Render’s **Environment** settings. Replace every placeholder; val
 | `S3_FORCE_PATH_STYLE`                                           | `true` for the recommended Supabase setup                             |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Optional; leave `SMTP_HOST` empty for now                             |
 
-Render supports `NODE_VERSION` to control the native runtime. [Node version configuration](https://render.com/docs/node-version).
+The repository's `.node-version` and Blueprint select Node 22. For an existing service, explicitly set `NODE_VERSION=22` in Render's Environment settings: a dashboard environment variable takes precedence over `.node-version`. [Node version configuration](https://render.com/docs/node-version).
+
+The current Mongoose version uses MongoDB Node.js driver 6.x. MongoDB documents Node 24 support starting with driver 7, so use Node 22 for this application rather than relying on Render's default runtime. This compatibility choice does not establish the cause of a particular TLS connection failure. [MongoDB Node 24 support](https://jira.mongodb.org/browse/NODE-6674).
 
 Generate a JWT secret locally and paste its output only into the private environment setting:
 

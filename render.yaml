@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: "22"
       - key: DEMO_MODE
         value: "false"
       - key: REQUIRE_EMAIL_VERIFICATION
