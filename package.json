@@ -1,0 +1,32 @@
+{
+  "name": "lifeline-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "db": "node scripts/database.mjs",
+    "dev": "concurrently -k -n api,web -c red,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format": "prettier --write client/src server/src shared tests scripts *.js *.json docs/*.md README.md",
+    "create-admin": "node server/src/create-admin.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "concurrently": "^9.2.1",
+    "jsdom": "^27.0.0",
+    "prettier": "^3.9.10",
+    "supertest": "^7.1.4",
+    "vitest": "^5.0.4"
+  }
+}

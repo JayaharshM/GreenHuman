@@ -1,0 +1,13 @@
+# Visual identity and asset provenance
+
+Lifeline uses a warm paper background, deep crimson, coral and charcoal, with Space Grotesk editorial headings and DM Sans body text. Font packages are hosted locally; their upstream Open Font Licenses ship with the installed packages. Layouts prioritize donor discovery, current verified requirements and event participation. Motion respects reduced-motion preferences. Maps have list alternatives and manual location search.
+
+No real NGO name, endorsement, registration certificate, patient, testimonial or partnership has been invented. Seeded medical requests, stories, people, hospitals and events are clearly fictitious. Hospital monograms, event posters, typography and campus graphics are original HTML/CSS/SVG compositions.
+
+The hero was generated with the built-in imagegen tool. Optimized project asset: `client/public/assets/community.jpg`. Original retained asset: `docs/community-original.png`. It illustrates community care and is not represented as a real donor photograph.
+
+Final generation prompt:
+
+> Use case: illustration-story. Asset type: original hero artwork for a premium youth blood donation NGO website called Lifeline. Primary request: a sophisticated, tactile editorial collage illustration of three diverse young Indian adult volunteers joyfully supporting a large sculptural red blood drop, with a small white heart inset in the drop, conveying compassion and community. Scene: warm off-white paper backdrop, no environment. Subject: friendly contemporary students, a woman in dark crimson sweater, a man in cream shirt, a woman in coral, subtly hand-painted, organic cut paper layered style with fine grain, warm human faces. Composition: landscape 3:2, large central ruby red drop, people arranged around it in playful dynamic poses, tasteful soft red botanical shapes and a thin heartbeat line. Color palette deep crimson #9B1C31, vibrant red #E63946, peach, charcoal and cream #FAF7F2. Style high-end independent editorial illustration, polished textured shapes, slightly retro printmaking. Constraints: no text, no letters, no watermark, no medical procedures, no needles, no hospital bed, no real person likeness, no gradients, no UI.
+
+Booking minimum age defaults to 18 and is server-configurable. Online registration does not establish clinical eligibility. References checked for the minimum-age boundary: [e-RaktKosh FAQ](https://eraktkosh.mohfw.gov.in/BLDAHIMS/bloodbank/eraktkoshfaq.cnt) and [Ministry of Health blood-centre standards](https://clinicalestablishments.mohfw.gov.in/sites/default/files/2023-03/1491_0.pdf). Final medical criteria are the responsibility of qualified healthcare partners.
