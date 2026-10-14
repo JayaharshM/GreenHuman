@@ -2,7 +2,9 @@
 
 Executed locally with Node.js 26.3.0, MongoDB Community 7.0.24 and installed Google Chrome.
 
-A follow-up check using Node.js 22.23.3 passed the production build and all 30 regression tests, including credential redaction, Render-only IP lookup, authentication error codes and IP-service failure handling for startup diagnostics. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; the failing Render deployment still needs a successful redeploy to confirm hosted connectivity.
+A follow-up check using Node.js 22.23.3 passed the production build and all 30 regression tests, including credential redaction, Render-only IP lookup, authentication error codes and IP-service failure handling for startup diagnostics. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; hosted HTTP checks are described below.
+
+A later live HTTP check confirmed that Render's API was healthy, but `/` returned `Cannot GET /`, its CSRF cookie lacked Secure, and its client/public origins did not match the deployed site. The Render settings were corrected by the user. Application configuration now selects production mode automatically on Render. Local checks with `RENDER=true`, `NODE_ENV=development` and both loopback HOST values served the actual React homepage, JavaScript bundle and `/hospitals` deep link with HTTP 200, set Secure cookies, and kept unknown API routes as JSON 404s. Each check used its own temporary local database and removed it afterward.
 
 | Check                              | Result                                                                                                                                                         |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,4 +24,4 @@ Browser tests exercised public navigation and map/list discovery, responsive ove
 
 Previews: [desktop](preview-desktop.png), [mobile](preview-mobile.png). Original artwork and prompt: [design notes](DESIGN.md).
 
-External SMTP delivery, S3-compatible storage and a hosted deployment were not exercised because service credentials and a deployment destination were not supplied. Docker/Render configurations are provided; the production smoke check used the local Node process. Production NGO/legal content and contacts remain editable drafts. The build emits harmless upstream Zod annotation warnings and completes successfully.
+External SMTP delivery and S3-compatible uploads have not been exercised. Docker/Render configurations are provided; the production smoke checks used local Node processes. Live Render checks covered public HTTP responses without creating users or demonstration data. Production NGO/legal content and contacts remain editable drafts. The build emits harmless upstream Zod annotation warnings and completes successfully.

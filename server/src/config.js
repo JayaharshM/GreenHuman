@@ -5,14 +5,18 @@ dotenv.config({
   path: fileURLToPath(new URL("../../.env", import.meta.url)),
   quiet: true,
 });
+const environment =
+  process.env.RENDER === "true"
+    ? "production"
+    : process.env.NODE_ENV || "development";
 export const config = {
-  env: process.env.NODE_ENV || "development",
+  env: environment,
   port: Number(process.env.PORT || 4000),
   host:
     process.env.RENDER === "true"
       ? "0.0.0.0"
       : process.env.HOST ||
-        (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1"),
+        (environment === "production" ? "0.0.0.0" : "127.0.0.1"),
   mongo: process.env.MONGODB_URI,
   secret: process.env.JWT_SECRET,
   client: process.env.CLIENT_URL || "http://127.0.0.1:5173",

@@ -10,6 +10,7 @@ import { platform } from "./routes/platform.js";
 import { Hospital, Drive, Story } from "./models/index.js";
 export function createApp() {
   const app = express();
+  app.set("env", config.env);
   app.disable("x-powered-by");
   if (config.env === "production") app.set("trust proxy", 1);
   app.use(

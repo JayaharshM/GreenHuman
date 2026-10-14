@@ -80,7 +80,7 @@ SMTP and S3 adapters are implemented but need your service credentials for exter
 
 For a step-by-step setup using free hosting, see [FREE_DEPLOYMENT.md](FREE_DEPLOYMENT.md). It covers provider limits, private file storage, email configuration, and first-admin creation.
 
-The simplest supported topology is **one HTTPS origin**: Express serves the built React app, `/api`, and `/socket.io`. This keeps HTTP-only cookies, CSRF and Socket.IO behavior consistent. A Dockerfile and `render.yaml` are included.
+The simplest supported topology is **one HTTPS origin**: Express serves the built React app at `/`, with `/api` and `/socket.io` on the same service. This keeps HTTP-only cookies, CSRF and Socket.IO behavior consistent. A Dockerfile and `render.yaml` are included. Render automatically uses the app's production configuration, including React static serving and Secure cookies, even if an old `NODE_ENV=development` setting is present. Set `NODE_ENV=production` in Render as well so the build tools use production settings, and use `npm ci --include=dev && npm run build` to include Vite during the build.
 
 ```sh
 npm ci

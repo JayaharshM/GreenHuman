@@ -157,7 +157,7 @@ Choose Docker as the Render runtime, use the repository root as the build contex
 
 ### If you use the existing `render.yaml`
 
-The checked-in Blueprint includes `REQUIRE_EMAIL_VERIFICATION=false` but currently does **not** explicitly select a free instance. Before using it, set the service’s `plan: free`, change `buildCommand` to `npm ci --include=dev && npm run build`, and add the S3 settings described here. The manual dashboard path above makes the instance choice explicit.
+The checked-in Blueprint includes `REQUIRE_EMAIL_VERIFICATION=false` and the build command `npm ci --include=dev && npm run build`, but currently does **not** explicitly select a free instance. Before using it, set the service’s `plan: free` and add the S3 settings described here. The manual dashboard path above makes the instance choice explicit.
 
 ## 7. Set the production environment variables
 
@@ -247,6 +247,8 @@ Socket.IO runs on the same HTTP server; Render supports WebSockets. Connections 
 Keep provider plans at Free and review usage. Render can suspend services or builds when allowances are exhausted without a payment method; with billing enabled, some usage can incur charges. Supabase can pause an inactive project, and Atlas needs a separate backup process. The allowances above are a small-deployment budget, not a promise of unlimited free capacity.
 
 ## Troubleshooting
+
+The frontend and API share the same public URL. `Cannot GET /` with a healthy `/api/health` means Express is running but isn't serving the React page. Set `NODE_ENV=production`, `CLIENT_URL` and `PUBLIC_URL` to the deployed HTTPS origin **in Render's Environment settings**, and use the repository-root build command `npm ci --include=dev && npm run build`. Local `.env` changes are not uploaded. Current code also selects production application settings automatically when Render's `RENDER=true` flag is present; this enables React static serving and Secure cookies. Atlas connectivity and valid production URLs remain prerequisites for startup.
 
 | Problem                                             | What to check                                                                                                                                                     |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
