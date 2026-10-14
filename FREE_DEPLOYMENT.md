@@ -262,6 +262,12 @@ Keep provider plans at Free and review usage. Render can suspend services or bui
 | A deep-link page returns 404                        | Use the root Express web service with `NODE_ENV=production`; deploy the generated `client/dist` via this server                                                   |
 | Website is slow on the first visit                  | Allow the free service to wake before testing; this is separate from database or authentication errors                                                            |
 
+On a MongoDB startup failure, look for `MongoDB startup diagnostics:` in the runtime logs. It reports the Node version, configured Atlas hostname and error codes. On Render, a five-second, best-effort HTTPS request to [ipify](https://www.ipify.org/) also reports `Render observed outbound IPv4:`. The lookup sends no database URI or credentials. Raw connection errors are excluded from these logs because they can contain credentials.
+
+Compare the observed IP with **all** ranges shown in this specific service's **Connect → Outbound** tab, and confirm those complete ranges are active in the **database IP Access List** for the Atlas project containing the logged cluster. Render may use different addresses within its regional ranges for different requests; one observed HTTPS address is a diagnostic clue, not a complete allowlist. [Render outbound ranges](https://render.com/docs/outbound-ip-addresses), [Atlas IP access lists](https://www.mongodb.com/docs/atlas/security/ip-access-list/).
+
+An `ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR` identifies a failed TLS connection, not a unique cause. If the error persists with the correct active IP ranges and URI, use the sanitized diagnostics when investigating with Render or MongoDB support. A successful local connection alone does not establish connectivity from Render.
+
 ## Updating the application
 
 Push changes to the repository branch linked to Render and let the service rebuild. Database records remain in Atlas and files remain in Storage. Keep the same JWT secret unless intentionally rotating it, because changing it invalidates existing sessions.

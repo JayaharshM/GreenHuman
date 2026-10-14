@@ -7,9 +7,16 @@ import { createApp } from "./app.js";
 import { attachIO } from "./services/events.js";
 import { runJobs } from "./services/jobs.js";
 import { assertProductionData } from "./services/database.js";
+import { reportMongoStartupFailure } from "./services/startup-diagnostics.js";
 import { User } from "./models/index.js";
 assertConfig();
-await mongoose.connect(config.mongo);
+try {
+  await mongoose.connect(config.mongo);
+} catch (error) {
+  await reportMongoStartupFailure(error, config.mongo);
+  await mongoose.disconnect();
+  process.exit(1);
+}
 await assertProductionData();
 const app = createApp();
 const server = http.createServer(app);

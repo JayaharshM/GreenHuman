@@ -2,12 +2,12 @@
 
 Executed locally with Node.js 26.3.0, MongoDB Community 7.0.24 and installed Google Chrome.
 
-A follow-up check using Node.js 22.23.3 passed the production build and all 26 regression tests. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; the failing Render deployment still needs a successful redeploy to confirm hosted connectivity.
+A follow-up check using Node.js 22.23.3 passed the production build and all 30 regression tests, including credential redaction, Render-only IP lookup, authentication error codes and IP-service failure handling for startup diagnostics. A read-only Atlas connection/ping to `lifeline` also succeeded under Node 22. Deployment configuration now selects Node 22 to match the current MongoDB driver and Dockerfile. These checks ran locally; the failing Render deployment still needs a successful redeploy to confirm hosted connectivity.
 
 | Check                              | Result                                                                                                         |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `npm run build`                    | Passed; React production assets generated                                                                      |
-| `npm test`                         | 26 tests passed across 3 files                                                                                 |
+| `npm test`                         | 30 tests passed across 4 files                                                                                 |
 | `npm run test:e2e`                 | 8 tests passed across desktop and mobile projects                                                              |
 | MongoDB Atlas connection           | Connected and pinged the `lifeline` database using the ignored `.env`; no demo seed or tests ran against Atlas |
 | `npm audit --audit-level=moderate` | 0 known vulnerabilities                                                                                        |
