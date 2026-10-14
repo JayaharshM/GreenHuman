@@ -87,7 +87,7 @@ test("public routes render without runtime errors", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next/);
   expect(errors).toEqual([]);
 });
-test("a donor registers, verifies email, requests a visit and joins a drive", async ({
+test("a donor registers and books without email verification", async ({
   page,
 }, testInfo) => {
   const email = `e2e-${Date.now()}-${testInfo.project.name}@lifeline.example`;
@@ -105,12 +105,15 @@ test("a donor registers, verifies email, requests a visit and joins a drive", as
   await page.getByRole("checkbox", { name: /I consent to processing/ }).check();
   await page.getByRole("button", { name: "Join the movement" }).click();
   await expect(page).toHaveURL("/dashboard");
-  await page
-    .getByRole("link", { name: "Open local verification email" })
-    .click();
-  await page.getByRole("button", { name: "Verify my email" }).click();
+  await expect(page.getByRole("button", { name: "Resend email" })).toHaveCount(
+    0,
+  );
   await expect(
-    page.getByRole("heading", { name: "You’re all set." }),
+    page.getByRole("link", { name: "Open local verification email" }),
+  ).toHaveCount(0);
+  await page.goto("/verify-email?token=old-link");
+  await expect(
+    page.getByRole("heading", { name: "No email check needed." }),
   ).toBeVisible();
   await page.goto("/hospitals");
   await page

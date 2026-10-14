@@ -538,9 +538,20 @@ function Recovery() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const form = useForm();
-  const { refresh } = useAuth();
+  const { refresh, user, emailVerificationRequired } = useAuth();
   const verify = path === "/verify-email";
   const reset = path === "/reset-password";
+  if (verify && !emailVerificationRequired)
+    return (
+      <AuthShell
+        title="No email check needed."
+        subtitle="You can use your account and request a donation visit without verifying your email."
+      >
+        <Button to={user ? dashboardPath(user.role) : "/login"}>
+          {user ? "Go to my dashboard" : "Sign in to continue"}
+        </Button>
+      </AuthShell>
+    );
   async function submit(values) {
     setBusy(true);
     setError("");

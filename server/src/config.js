@@ -15,6 +15,7 @@ export const config = {
   secret: process.env.JWT_SECRET,
   client: process.env.CLIENT_URL || "http://127.0.0.1:5173",
   demo: process.env.DEMO_MODE === "true",
+  requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION === "true",
   minAge: Number(process.env.MIN_DONATION_AGE || 18),
   uploads: path.resolve(
     fileURLToPath(new URL("../../", import.meta.url)),
@@ -33,5 +34,13 @@ export function assertConfig() {
   )
     throw new Error(
       "Production requires HTTPS CLIENT_URL and DEMO_MODE=false.",
+    );
+  if (
+    config.env === "production" &&
+    config.requireEmailVerification &&
+    !process.env.SMTP_HOST
+  )
+    throw new Error(
+      "Configure SMTP before enabling REQUIRE_EMAIL_VERIFICATION, or set it to false.",
     );
 }

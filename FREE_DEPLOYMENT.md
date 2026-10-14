@@ -2,9 +2,9 @@
 
 Provider information checked on **14 October 2026**. This guide is specific to the code in this repository.
 
-The recommended setup is **Render Free + MongoDB Atlas Free + Supabase Storage Free + Brevo Free**. Keep the React frontend and Express backend together on Render. This preserves the app’s existing cookie authentication, CSRF protection, private file routes, and Socket.IO connection without changing application code.
+The recommended setup is **Render Free + MongoDB Atlas Free + Supabase Storage Free**. Email delivery is optional and currently disabled. Keep the React frontend and Express backend together on Render. This preserves the app’s existing cookie authentication, CSRF protection, private file routes, and Socket.IO connection without changing application code.
 
-Hosting, database, and file storage can cost $0 while you remain within their allowances. Email also needs an approved sender; a domain you own may add a cost if you do not already have one. Free services can sleep or pause, so this is suitable for a college project, demonstration, or small pilot rather than dependable, round-the-clock donation coordination.
+Hosting, database, and file storage can cost $0 while you remain within their allowances. Registration and booking currently work without an email provider. If you enable email later, an approved sender domain may add a cost if you do not already have one. Free services can sleep or pause, so this is suitable for a college project, demonstration, or small pilot rather than dependable, round-the-clock donation coordination.
 
 ## 1. What runs where
 
@@ -13,16 +13,16 @@ flowchart LR
     Browser[Browser] -->|HTTPS: pages, API, Socket.IO| Render[Render: React build + Express]
     Render --> Atlas[MongoDB Atlas: application records]
     Render --> Storage[Supabase S3: private files]
-    Render --> Email[Brevo SMTP: verification and reset emails]
+    Render --> Email[Optional SMTP: email delivery]
 ```
 
-| Part                                        | Free option                            | What to expect                                                                                                                                                                                                        |
-| ------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend, API, Socket.IO                    | One Render Free **Web Service**        | Shared allowance of 750 free instance hours/month per workspace; sleeps after 15 idle minutes; a cold start can take about a minute. [Render free-service limits](https://render.com/docs/free).                      |
-| MongoDB                                     | Atlas **Free / M0** cluster            | 0.5 GB including documents and indexes; no managed backups; idle clusters can pause after 30 days without connections. [Atlas limits](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).         |
-| Hospital images and private documents       | Supabase **Free** Storage              | 1 GB file storage; 5 GB uncached and 5 GB cached egress allowances; projects can pause after one inactive week. Only Storage is used; MongoDB remains the database. [Supabase pricing](https://supabase.com/pricing). |
-| Verification, reset, and confirmation email | Brevo **Free**                         | 300 email sends/day, subject to account activation and sender requirements. [Brevo free-plan limits](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan).                   |
-| Website URL                                 | Render-provided `onrender.com` address | A custom website domain is optional. [Render deployment guide](https://render.com/docs/deploy-node-express-app).                                                                                                      |
+| Part                                  | Free option                            | What to expect                                                                                                                                                                                                        |
+| ------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend, API, Socket.IO              | One Render Free **Web Service**        | Shared allowance of 750 free instance hours/month per workspace; sleeps after 15 idle minutes; a cold start can take about a minute. [Render free-service limits](https://render.com/docs/free).                      |
+| MongoDB                               | Atlas **Free / M0** cluster            | 0.5 GB including documents and indexes; no managed backups; idle clusters can pause after 30 days without connections. [Atlas limits](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).         |
+| Hospital images and private documents | Supabase **Free** Storage              | 1 GB file storage; 5 GB uncached and 5 GB cached egress allowances; projects can pause after one inactive week. Only Storage is used; MongoDB remains the database. [Supabase pricing](https://supabase.com/pricing). |
+| Optional email delivery               | Brevo **Free**                         | 300 email sends/day, subject to account activation and sender requirements. [Brevo free-plan limits](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan).                   |
+| Website URL                           | Render-provided `onrender.com` address | A custom website domain is optional. [Render deployment guide](https://render.com/docs/deploy-node-express-app).                                                                                                      |
 
 ## 2. Prepare the repository
 
@@ -92,9 +92,22 @@ If you already use Cloudflare, its Standard-storage allowance includes 10 GB-mon
 
 Create a private bucket and a bucket-scoped read/write S3 token, then replace the Supabase values with the bucket’s R2 credentials and endpoint. Use `S3_REGION=auto`; keep the bucket private. The recommended Supabase path avoids relying on R2’s usage-based billing for this small deployment.
 
-## 5. Configure email before testing donor registration
+## 5. Skip email setup for now
 
-New donors must verify their email before booking. In production, the app does not show the local development verification link. A deployment without working email will therefore leave new donors unable to complete booking onboarding.
+The current application does **not** require email verification. Deploy with:
+
+```dotenv
+REQUIRE_EMAIL_VERIFICATION=false
+SMTP_HOST=
+```
+
+New and existing users can register, request appointments, and join drives without an email confirmation. Verification banners are hidden and signup does not generate verification emails or tokens. Hospital and medical requirement verification still apply.
+
+In-app notifications continue working. Password reset and optional confirmation/reminder emails need a mail provider for delivery; without SMTP those messages stay in the private outbox. Do not rely on email-based password recovery until a working provider is configured.
+
+### Optional: enable email delivery later
+
+The following Brevo instructions are for later use, not a prerequisite for deploying the current application. Any SMTP provider compatible with Nodemailer may be used. If you also want to require account email verification, set `REQUIRE_EMAIL_VERIFICATION=true` after configuring working SMTP. Production startup rejects that combination if SMTP is missing.
 
 Render Free blocks outbound SMTP ports **25, 465, and 587**. The repository’s example port, `587`, needs to be changed for this deployment. [Render SMTP restrictions](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports).
 
@@ -144,7 +157,7 @@ Choose Docker as the Render runtime, use the repository root as the build contex
 
 ### If you use the existing `render.yaml`
 
-The checked-in Blueprint currently does **not** explicitly select a free instance. Before using it, set the service’s `plan: free`, change `buildCommand` to `npm ci --include=dev && npm run build`, and add the SMTP/S3 settings described here. The manual dashboard path above makes the instance choice explicit. This guide does not modify your deployment configuration automatically.
+The checked-in Blueprint includes `REQUIRE_EMAIL_VERIFICATION=false` but currently does **not** explicitly select a free instance. Before using it, set the service’s `plan: free`, change `buildCommand` to `npm ci --include=dev && npm run build`, and add the S3 settings described here. The manual dashboard path above makes the instance choice explicit.
 
 ## 7. Set the production environment variables
 
@@ -155,6 +168,7 @@ Add these in Render’s **Environment** settings. Replace every placeholder; val
 | `NODE_ENV`                                                      | `production`                                                          |
 | `NODE_VERSION`                                                  | `22` for the native Node runtime; the Dockerfile already uses Node 22 |
 | `DEMO_MODE`                                                     | `false`                                                               |
+| `REQUIRE_EMAIL_VERIFICATION`                                    | `false` (current mode; no email confirmation required)                |
 | `HOST`                                                          | `0.0.0.0`                                                             |
 | `CLIENT_URL`                                                    | Your exact HTTPS Render URL, with no trailing slash                   |
 | `PUBLIC_URL`                                                    | The same HTTPS URL, with no trailing slash                            |
@@ -164,7 +178,7 @@ Add these in Render’s **Environment** settings. Replace every placeholder; val
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`                         | Values from step 4                                                    |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`                      | Private S3 credentials from step 4                                    |
 | `S3_FORCE_PATH_STYLE`                                           | `true` for the recommended Supabase setup                             |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Values from step 5                                                    |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Optional; leave `SMTP_HOST` empty for now                             |
 
 Render supports `NODE_VERSION` to control the native runtime. [Node version configuration](https://render.com/docs/node-version).
 
@@ -206,19 +220,19 @@ Remove the temporary Atlas IP entry afterward. Sign into the deployed `/login` p
 
 ## 9. Check the deployed workflows
 
-| Check                                              | Expected result                                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Open `/` and refresh `/hospitals` directly         | Both load the React application                                                       |
-| Open `/api/health`                                 | JSON containing `data.status: "ok"`; also check real database-backed pages            |
-| Start with the empty database                      | Honest zero counts and empty listings                                                 |
-| Register a donor                                   | Verification email arrives with the public HTTPS URL                                  |
-| Verify email, then request a visit                 | Email verification is recognized; booking waits for hospital confirmation             |
-| Submit a hospital profile and document             | NGO administrator can privately download and review the file                          |
-| Approve a hospital and a requirement               | Only approved records appear publicly                                                 |
-| Register/cancel a drive                            | Capacity and dashboard records change correctly                                       |
-| Confirm an appointment in a second browser session | Donor sees the updated status; authenticated real-time updates work while connected   |
-| Redeploy, then download an uploaded document       | File remains available through the authorized route because it is in external storage |
-| Request a password reset                           | Reset email arrives and its link points to the deployed site                          |
+| Check                                              | Expected result                                                                         |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Open `/` and refresh `/hospitals` directly         | Both load the React application                                                         |
+| Open `/api/health`                                 | JSON containing `data.status: "ok"`; also check real database-backed pages              |
+| Start with the empty database                      | Honest zero counts and empty listings                                                   |
+| Register a donor                                   | Account opens directly; no verification email or banner is required                     |
+| Request a visit after registration                 | Age and consent are checked; booking waits for hospital confirmation                    |
+| Submit a hospital profile and document             | NGO administrator can privately download and review the file                            |
+| Approve a hospital and a requirement               | Only approved records appear publicly                                                   |
+| Register/cancel a drive                            | Capacity and dashboard records change correctly                                         |
+| Confirm an appointment in a second browser session | Donor sees the updated status; authenticated real-time updates work while connected     |
+| Redeploy, then download an uploaded document       | File remains available through the authorized route because it is in external storage   |
+| Request a password reset                           | When SMTP is configured, reset email arrives with the deployed URL; recovery needs SMTP |
 
 Use separate browser profiles for donor, hospital, and admin testing so their cookies do not overwrite one another. Replace the draft NGO and policy content before inviting real participants.
 
@@ -238,7 +252,7 @@ Keep provider plans at Free and review usage. Render can suspend services or bui
 | Connection timeout / `MongooseServerSelectionError` | Atlas URI, database password encoding, all Render outbound CIDRs, and whether Atlas is paused                                                                     |
 | Production refuses demonstration records            | Use a fresh database; do not disable the guard or use the seeded local database                                                                                   |
 | Login or form actions return 403                    | `CLIENT_URL` must match the browser’s exact HTTPS origin, with no trailing slash; keep frontend/API together                                                      |
-| Pages load but new donors cannot book               | Complete email verification and booking-communication consent; inspect email delivery status                                                                      |
+| Pages load but new donors cannot book               | Set `REQUIRE_EMAIL_VERIFICATION=false` and check age and booking-communication consent                                                                            |
 | Email times out                                     | Use `SMTP_PORT=2525`, not the example’s 587; confirm Brevo activation, SMTP login/key, and approved sender                                                        |
 | Email is marked sent but never arrives              | Inspect Brevo transactional logs, sender authentication, recipient spam folder, and send quota; application `EmailOutbox` records distinguish pending/failed/sent |
 | Uploads fail                                        | Correct S3 endpoint, region, generated S3 keys, `S3_FORCE_PATH_STYLE=true`, active Supabase project, and available quota; test a genuine PDF/PNG/JPEG under 5 MB  |

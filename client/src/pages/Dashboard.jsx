@@ -168,7 +168,7 @@ function DataTable({ columns, rows, empty = "Nothing to review right now." }) {
   );
 }
 export default function Dashboard({ mode }) {
-  const { user, refresh } = useAuth();
+  const { user, refresh, emailVerificationRequired } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
   const location = useLocation();
@@ -785,7 +785,9 @@ export default function Dashboard({ mode }) {
                       ? "disabled"
                       : u.isVerified
                         ? "verified"
-                        : "pending"
+                        : emailVerificationRequired
+                          ? "pending"
+                          : "active"
                   }
                 />
               ),
@@ -953,7 +955,7 @@ export default function Dashboard({ mode }) {
           </div>
           <span className="profile-avatar">{user.name[0]}</span>
         </div>
-        {!user.isVerified && (
+        {emailVerificationRequired && !user.isVerified && (
           <div className="verification-banner">
             <Mail size={20} />
             <div>

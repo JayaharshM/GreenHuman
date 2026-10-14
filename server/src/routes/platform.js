@@ -89,7 +89,8 @@ const ownership = async (user, hospitalId, verified = false) => {
 };
 const canDonate = (user) => {
   if (user.role !== "donor") fail(403, "Use a donor account to register.");
-  if (!user.isVerified) fail(403, "Verify your email before booking.");
+  if (config.requireEmailVerification && !user.isVerified)
+    fail(403, "Verify your email before booking.");
   if (!user.dateOfBirth || ageOn(user.dateOfBirth) < config.minAge)
     fail(
       422,

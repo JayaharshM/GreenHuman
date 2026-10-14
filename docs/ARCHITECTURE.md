@@ -8,6 +8,8 @@ Hospital onboarding → pending hospital → administrator reviews private docum
 
 Access JWT: 15 minutes; rotating opaque refresh token: 7 days; both HTTP-only cookies. Double-submit CSRF token and strict allowed origins protect cookie mutations. Password reset and email verification tokens are hashed, single-use and expire. Private document files require ownership or admin access. Socket rooms are assigned server-side from authenticated ownership and never contain public donor data.
 
+Email verification is optional and currently off (`REQUIRE_EMAIL_VERIFICATION=false`). Registration does not create or queue verification tokens/emails when it is off, and existing unverified accounts can book. The `isVerified` field continues to reflect actual email verification; disabling the requirement does not rewrite account history. Hospital and medical requirement verification are independent and remain enforced.
+
 Collections: Users, Hospitals (GeoJSON 2dsphere), BloodRequests (expiration), DonationDrives (atomic capacity counters), DriveRegistrations (unique donor+drive), Appointments (active partial unique index), DonationRecords (unique appointment), Notifications, Sponsorships, Applications, Stories, ContentPages, AuditLogs, EmailOutbox. Consent revisions are append-only audit records. All list endpoints are bounded.
 
 Phases: foundation and models → authentication and access → donor/hospital workflows → verified requests and drives → admin/community/content/sponsorship → UI polish, tests, deployment instructions.

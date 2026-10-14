@@ -32,16 +32,16 @@ Open **http://127.0.0.1:5173**. API: `http://127.0.0.1:4000/api`; local MongoDB:
 | NGO administrator      | `admin@lifeline.example`     | `DemoLife2026!` |
 | Volunteer organizer    | `volunteer@lifeline.example` | `DemoLife2026!` |
 
-The password above is the development value in `.env.example`. If you changed `SEED_PASSWORD` **before the first seed**, use that value instead. Seed credentials are not read by production authentication. New users verify their email before booking; in development without SMTP, the dashboard offers an explicitly labeled local verification-email link. Password-reset emails are stored privately in `EmailOutbox` when SMTP is absent; configure SMTP for actual delivery.
+The password above is the development value in `.env.example`. If you changed `SEED_PASSWORD` **before the first seed**, use that value instead. Seed credentials are not read by production authentication. **Email verification is currently disabled:** new and existing accounts can book without an email confirmation. `REQUIRE_EMAIL_VERIFICATION=false` is the default. No verification emails or tokens are created in this mode, and emails are not falsely marked as verified. Password-reset and other notification emails still need SMTP for delivery; without it they remain in the private `EmailOutbox`.
 
 ## Main workflows
 
-1. **Donor:** register in three steps → verify email → search/map hospitals → request preferred visit → hospital confirms an actual date/time → hospital separately records an actual donation. Appointment cancellation, drive registration/cancellation, notifications, independent consent controls, JSON data export, and account-deletion requests are available in the dashboard.
+1. **Donor:** register in three steps → search/map hospitals → request preferred visit → hospital confirms an actual date/time → hospital separately records an actual donation. Appointment cancellation, drive registration/cancellation, notifications, independent consent controls, JSON data export, and account-deletion requests are available in the dashboard. Email verification is an optional deployment setting, currently off.
 2. **Hospital:** register authorized administrator → submit profile and private verification document → NGO review → manage appointment requests, requirements, drives and sponsored-placement applications. Profile edits and material requirement edits return to review.
 3. **NGO administrator:** review private hospital documents, verify requirements, approve drives, manage sponsorship dates/prices/manual payment reconciliation, suspend accounts, review inquiries/applications, edit content, publish consented stories, view aggregate analytics and audit logs.
 4. **Volunteer organizer:** view/create drives with a verified hospital partner, await NGO approval, see their own participants, and post status/announcement updates.
 
-No available appointment times are fabricated. No registration or check-in is counted as a donation. Booking age, consent, email verification, ownership, duplicate registrations, capacity, document access and all review permissions are enforced by Express. Urgency is reviewed independently of sponsorship; paid placement is labeled and appears separately from requirements.
+No available appointment times are fabricated. No registration or check-in is counted as a donation. Booking age, consent, ownership, duplicate registrations, capacity, document access and all review permissions are enforced by Express. Email verification is enforced only when explicitly enabled. Hospital and medical requirement verification remain required. Urgency is reviewed independently of sponsorship; paid placement is labeled and appears separately from requirements.
 
 Public pages include `/`, `/about`, `/hospitals`, `/hospitals/:id`, `/urgent-requests`, `/drives`, `/drives/:id`, `/campus`, `/volunteer`, `/stories`, `/stories/:id`, `/contact`, `/faq`, `/privacy`, `/terms`, `/accessibility` and a 404 route. Protected areas are `/dashboard`, `/hospital/dashboard` and `/admin`.
 
@@ -57,7 +57,7 @@ npm run test:e2e
 
 - Vitest/React Testing Library: accessible controls, validation and consent/age/date boundaries.
 - Supertest: actual Express requests against a newly created `lifeline_test_*` MongoDB database. Includes auth, CSRF, private documents, verification, geospatial queries, cross-account isolation, appointments, donation completion, drive-capacity races, sponsorship authorization, export, reset-token reuse and logout. Only the suite’s isolated database is removed.
-- Playwright: desktop and mobile discovery/navigation, public-route smoke checks, donor onboarding/verification/booking/drive registration, and hospital-to-NGO requirement review. Run against the seeded local demo. On macOS the config uses installed Google Chrome; on other platforms run `npx playwright install chromium` first. Browser tests create fictitious demonstration records in the local demo database.
+- Playwright: desktop and mobile discovery/navigation, public-route smoke checks, donor onboarding and booking without email verification, drive registration, and hospital-to-NGO requirement review. The suite starts its own API/client on ports `4002`/`5174`, seeds an isolated `lifeline_test_e2e_*` database on local MongoDB port `27018`, and removes that database afterward. Keep local MongoDB running; no manual seed or dev server is needed. Atlas and your running development app are unaffected. On macOS the config uses installed Google Chrome; on other platforms run `npx playwright install chromium` first.
 - Screenshots and failure traces are written to ignored `test-results/`; the HTML report is in `playwright-report/`.
 
 ## Configuration and integrations
@@ -74,7 +74,7 @@ See [.env.example](.env.example) for all configuration keys. Never commit `.env`
 | Real time       | Socket.IO authenticates HTTP-only access cookies, assigns user rooms server-side and sends generic listing invalidations; personal notifications only go to the recipient             |
 | Sponsorship     | Admin-managed pricing/approval/manual reconciliation. No payment-gateway or card-data processing                                                                                      |
 
-SMTP and S3 adapters are implemented but need your service credentials for external-delivery/storage verification. Optional Google OAuth, SMS/WhatsApp, a payment gateway, QR check-in, waitlists and hospital staff subaccounts are not included.
+SMTP and S3 adapters are implemented but need your service credentials for external-delivery/storage verification. Brevo is optional; registration and booking work without it. To restore email verification later, configure a working SMTP provider and set `REQUIRE_EMAIL_VERIFICATION=true`. In production, startup requires SMTP when that setting is enabled. Existing accounts that have not verified their emails will then need to verify. Optional Google OAuth, SMS/WhatsApp, a payment gateway, QR check-in, waitlists and hospital staff subaccounts are not included.
 
 ## Production deployment
 
@@ -88,7 +88,7 @@ npm run build
 NODE_ENV=production npm start
 ```
 
-Set `NODE_ENV=production`, `DEMO_MODE=false`, a strong random `JWT_SECRET`, Atlas `MONGODB_URI`, and matching HTTPS `CLIENT_URL` / `PUBLIC_URL`. The process binds to `0.0.0.0:$PORT` in production. Connect SMTP; configure private S3 storage or set `PRIVATE_UPLOAD_DIR` to a persistent mounted directory. A single instance runs the scheduled jobs. Multi-instance deployments need a shared rate-limit store, a distributed job lock/queue and a Socket.IO adapter.
+Set `NODE_ENV=production`, `DEMO_MODE=false`, `REQUIRE_EMAIL_VERIFICATION=false`, a strong random `JWT_SECRET`, Atlas `MONGODB_URI`, and matching HTTPS `CLIENT_URL` / `PUBLIC_URL`. The process binds to `0.0.0.0:$PORT` in production. SMTP is optional while verification is off; configure it when email delivery is needed. Configure private S3 storage or set `PRIVATE_UPLOAD_DIR` to a persistent mounted directory. A single instance runs the scheduled jobs. Multi-instance deployments need a shared rate-limit store, a distributed job lock/queue and a Socket.IO adapter.
 
 For Vercel frontend + Render/Railway API, proxy `/api` and `/socket.io` through a shared domain, or intentionally configure cross-site cookie and CSRF behavior. Do not simply deploy the frontend with a cross-site API URL and assume cookie sessions will work. No hosted deployment has been created by this local build.
 

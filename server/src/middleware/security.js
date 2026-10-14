@@ -112,6 +112,7 @@ export const safeUser = (user) => ({
   bloodGroup: user.bloodGroup,
   college: user.college,
   isVerified: user.isVerified,
+  emailVerificationRequired: config.requireEmailVerification,
   consent: user.consent,
   notificationPreferences: user.notificationPreferences,
   deletionRequestedAt: user.deletionRequestedAt,

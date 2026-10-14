@@ -14,6 +14,8 @@ export default defineConfig({
       NODE_ENV: "test",
       JWT_SECRET: "lifeline-test-secret-with-more-than-thirty-two-characters",
       DEMO_MODE: "true",
+      REQUIRE_EMAIL_VERIFICATION: "false",
+      SMTP_HOST: "",
     },
     fileParallelism: false,
   },

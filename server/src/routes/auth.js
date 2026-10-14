@@ -16,30 +16,45 @@ import {
 import { email, audit } from "../services/events.js";
 import { config } from "../config.js";
 export const authRouter = Router();
+const verificationEnabled = (_req, _res, next) => {
+  if (!config.requireEmailVerification)
+    fail(
+      409,
+      "Email verification is currently disabled. You can use your account without it.",
+    );
+  next();
+};
 authRouter.post("/register", validate(registerSchema), async (req, res) => {
   const data = req.input;
-  const verification = token();
+  const verification = config.requireEmailVerification ? token() : null;
   const user = await User.create({
     ...data,
     demo: config.demo,
     passwordHash: await bcrypt.hash(data.password, 12),
     consentRecords: [{ choices: data.consent, at: new Date(), version: "1.0" }],
-    emailTokenHash: hash(verification),
-    emailTokenExpires: new Date(Date.now() + 86400000),
+    ...(verification
+      ? {
+          emailTokenHash: hash(verification),
+          emailTokenExpires: new Date(Date.now() + 86400000),
+        }
+      : {}),
   });
-  const link = `${config.client}/verify-email?token=${verification}`;
-  const local = await email(
-    user,
-    "Verify your Lifeline email",
-    `Confirm your email: ${link}`,
-  );
+  let developmentLink;
+  if (verification) {
+    const link = `${config.client}/verify-email?token=${verification}`;
+    const local = await email(
+      user,
+      "Verify your Lifeline email",
+      `Confirm your email: ${link}`,
+    );
+    if (local && config.env === "development") developmentLink = link;
+  }
   await setSession(res, user);
   res.status(201).json({
     data: safeUser(user),
     meta: {
-      ...(local && config.env === "development"
-        ? { developmentLink: link }
-        : {}),
+      emailVerificationRequired: config.requireEmailVerification,
+      ...(developmentLink ? { developmentLink } : {}),
     },
   });
 });
@@ -147,6 +162,7 @@ authRouter.post(
 );
 authRouter.post(
   "/verify-email",
+  verificationEnabled,
   validate(z.object({ token: z.string().length(64) })),
   async (req, res) => {
     const user = await User.findOneAndUpdate(
@@ -167,20 +183,25 @@ authRouter.post(
     });
   },
 );
-authRouter.post("/resend-verification", auth, async (req, res) => {
-  if (req.user.isVerified) fail(400, "Your email is already verified.");
-  const verification = token();
-  req.user.emailTokenHash = hash(verification);
-  req.user.emailTokenExpires = new Date(Date.now() + 86400000);
-  await req.user.save();
-  const link = `${config.client}/verify-email?token=${verification}`;
-  const local = await email(req.user, "Verify your Lifeline email", link);
-  res.json({
-    data: { message: "Verification email queued." },
-    meta: {
-      ...(local && config.env === "development"
-        ? { developmentLink: link }
-        : {}),
-    },
-  });
-});
+authRouter.post(
+  "/resend-verification",
+  auth,
+  verificationEnabled,
+  async (req, res) => {
+    if (req.user.isVerified) fail(400, "Your email is already verified.");
+    const verification = token();
+    req.user.emailTokenHash = hash(verification);
+    req.user.emailTokenExpires = new Date(Date.now() + 86400000);
+    await req.user.save();
+    const link = `${config.client}/verify-email?token=${verification}`;
+    const local = await email(req.user, "Verify your Lifeline email", link);
+    res.json({
+      data: { message: "Verification email queued." },
+      meta: {
+        ...(local && config.env === "development"
+          ? { developmentLink: link }
+          : {}),
+      },
+    });
+  },
+);

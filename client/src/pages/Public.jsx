@@ -412,7 +412,7 @@ function AppointmentForm({ hospital, requestId, onClose }) {
         {error && (
           <p className="form-error" role="alert">
             {error}
-            {!user.isVerified && (
+            {user.emailVerificationRequired && !user.isVerified && (
               <Link to="/dashboard"> Manage email verification</Link>
             )}
           </p>

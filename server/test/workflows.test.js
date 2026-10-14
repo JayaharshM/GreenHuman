@@ -3,6 +3,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { createApp } from "../src/app.js";
+import { config } from "../src/config.js";
 import { assertProductionData } from "../src/services/database.js";
 import * as models from "../src/models/index.js";
 const {
@@ -110,60 +111,109 @@ describe("Real Express → MongoDB workflows", () => {
       .set("Origin", "https://evil.example");
     expect(noOrigin.status).toBe(403);
   });
-  it("registers a donor and verifies the single-use email token", async () => {
+  it("registers a donor and verifies single-use tokens when explicitly enabled", async () => {
+    const previous = config.requireEmailVerification;
+    config.requireEmailVerification = true;
+    try {
+      const agent = request.agent(app);
+      const csrf = (await agent.get("/api/csrf")).body.data.token;
+      const payload = {
+        name: "New test donor",
+        email: "new@test.example",
+        phone: "9000000000",
+        password: "TestingLife123!",
+        dateOfBirth: "2000-01-01",
+        city: "Pune",
+        state: "Maharashtra",
+        pincode: "411001",
+        consent: { processing: true, booking: true },
+      };
+      expect(
+        (
+          await agent
+            .post("/api/auth/register")
+            .set("X-CSRF-Token", csrf)
+            .send({ ...payload, role: "admin" })
+        ).status,
+      ).toBe(422);
+      const result = await agent
+        .post("/api/auth/register")
+        .set("X-CSRF-Token", csrf)
+        .send(payload);
+      expect(result.status).toBe(201);
+      expect(
+        result.headers["set-cookie"].some((v) => v.includes("HttpOnly")),
+      ).toBe(true);
+      expect(result.body.data.isVerified).toBe(false);
+      const u = await User.findOne({ email: payload.email });
+      const mail = await EmailOutbox.findOne({ recipientId: u._id }).select(
+        "+text",
+      );
+      const token = new URL(
+        mail.text.split("Confirm your email: ")[1],
+      ).searchParams.get("token");
+      expect(
+        (
+          await agent
+            .post("/api/auth/verify-email")
+            .set("X-CSRF-Token", csrf)
+            .send({ token })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await agent
+            .post("/api/auth/verify-email")
+            .set("X-CSRF-Token", csrf)
+            .send({ token })
+        ).status,
+      ).toBe(400);
+    } finally {
+      config.requireEmailVerification = previous;
+    }
+  });
+  it("registers without verification emails, tokens or a false verified flag", async () => {
     const agent = request.agent(app);
     const csrf = (await agent.get("/api/csrf")).body.data.token;
-    const payload = {
-      name: "New test donor",
-      email: "new@test.example",
-      phone: "9000000000",
-      password: "TestingLife123!",
-      dateOfBirth: "2000-01-01",
-      city: "Pune",
-      state: "Maharashtra",
-      pincode: "411001",
-      consent: { processing: true, booking: true },
-    };
-    expect(
-      (
-        await agent
-          .post("/api/auth/register")
-          .set("X-CSRF-Token", csrf)
-          .send({ ...payload, role: "admin" })
-      ).status,
-    ).toBe(422);
     const result = await agent
       .post("/api/auth/register")
       .set("X-CSRF-Token", csrf)
-      .send(payload);
+      .send({
+        name: "No email test donor",
+        email: "no-email@test.example",
+        phone: "9000000000",
+        password: "TestingLife123!",
+        dateOfBirth: "2000-01-01",
+        city: "Pune",
+        state: "Maharashtra",
+        pincode: "411001",
+        consent: { processing: true, booking: true },
+      });
     expect(result.status).toBe(201);
-    expect(
-      result.headers["set-cookie"].some((v) => v.includes("HttpOnly")),
-    ).toBe(true);
     expect(result.body.data.isVerified).toBe(false);
-    const u = await User.findOne({ email: payload.email });
-    const mail = await EmailOutbox.findOne({ recipientId: u._id }).select(
-      "+text",
+    expect(result.body.data.emailVerificationRequired).toBe(false);
+    expect(result.body.meta.developmentLink).toBeUndefined();
+    const user = await User.findOne({ email: "no-email@test.example" }).select(
+      "+emailTokenHash",
     );
-    const token = new URL(
-      mail.text.split("Confirm your email: ")[1],
-    ).searchParams.get("token");
+    expect(user.emailTokenHash).toBeUndefined();
+    expect(user.emailTokenExpires).toBeUndefined();
+    expect(await EmailOutbox.countDocuments({ recipientId: user._id })).toBe(0);
+    expect(
+      (
+        await agent
+          .post("/api/auth/resend-verification")
+          .set("X-CSRF-Token", csrf)
+      ).status,
+    ).toBe(409);
     expect(
       (
         await agent
           .post("/api/auth/verify-email")
           .set("X-CSRF-Token", csrf)
-          .send({ token })
+          .send({ token: "a".repeat(64) })
       ).status,
-    ).toBe(200);
-    expect(
-      (
-        await agent
-          .post("/api/auth/verify-email")
-          .set("X-CSRF-Token", csrf)
-          .send({ token })
-      ).status,
-    ).toBe(400);
+    ).toBe(409);
   });
   it("keeps pending hospitals private and restricts verification documents", async () => {
     const payload = {
@@ -240,9 +290,15 @@ describe("Real Express → MongoDB workflows", () => {
     expect((await sessions.minor.post("/api/appointments", body)).status).toBe(
       422,
     );
-    expect(
-      (await sessions.unverified.post("/api/appointments", body)).status,
-    ).toBe(403);
+    const previous = config.requireEmailVerification;
+    config.requireEmailVerification = true;
+    try {
+      expect(
+        (await sessions.unverified.post("/api/appointments", body)).status,
+      ).toBe(403);
+    } finally {
+      config.requireEmailVerification = previous;
+    }
     await User.updateOne(
       { _id: users.otherDonor._id },
       { "consent.booking": false },
@@ -254,6 +310,24 @@ describe("Real Express → MongoDB workflows", () => {
       { _id: users.otherDonor._id },
       { "consent.booking": true },
     );
+  });
+  it("allows an existing unverified donor to book when verification is disabled", async () => {
+    expect(config.requireEmailVerification).toBe(false);
+    const result = await sessions.unverified.post("/api/appointments", {
+      hospitalId: hospital._id,
+      preferredDate: tomorrow(),
+    });
+    expect(result.status).toBe(201);
+    expect(result.body.data.status).toBe("requested");
+    expect((await User.findById(users.unverified._id)).isVerified).toBe(false);
+    expect(
+      (
+        await sessions.unverified.patch(
+          `/api/appointments/${result.body.data._id}`,
+          { status: "cancelled" },
+        )
+      ).status,
+    ).toBe(200);
   });
   it("requests and confirms a real appointment, counts only a hospital-confirmed donation", async () => {
     const body = { hospitalId: hospital._id, preferredDate: tomorrow() };
@@ -418,6 +492,20 @@ describe("Real Express → MongoDB workflows", () => {
     ).toBe(409);
     expect(
       (await winner.delete(`/api/drives/${drive._id}/register`)).status,
+    ).toBe(200);
+    expect((await Drive.findById(drive._id)).registeredCount).toBe(0);
+  });
+  it("allows an unverified donor to join a drive while still enforcing age", async () => {
+    expect(
+      (await sessions.minor.post(`/api/drives/${drive._id}/register`)).status,
+    ).toBe(422);
+    expect(
+      (await sessions.unverified.post(`/api/drives/${drive._id}/register`))
+        .status,
+    ).toBe(201);
+    expect(
+      (await sessions.unverified.delete(`/api/drives/${drive._id}/register`))
+        .status,
     ).toBe(200);
     expect((await Drive.findById(drive._id)).registeredCount).toBe(0);
   });

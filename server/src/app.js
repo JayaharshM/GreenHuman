@@ -101,7 +101,12 @@ export function createApp() {
       path: "/api",
     });
     res.json({
-      data: { token: value, demo: config.demo, minDonationAge: config.minAge },
+      data: {
+        token: value,
+        demo: config.demo,
+        minDonationAge: config.minAge,
+        emailVerificationRequired: config.requireEmailVerification,
+      },
     });
   });
   const authLimit = rateLimit({

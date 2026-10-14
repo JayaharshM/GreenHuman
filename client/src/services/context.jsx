@@ -8,6 +8,7 @@ export function AppProviders({ children }) {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState(null);
   const [demo, setDemo] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
@@ -21,7 +22,10 @@ export function AppProviders({ children }) {
   });
   useEffect(() => {
     security()
-      .then((v) => setDemo(v.demo))
+      .then((v) => {
+        setDemo(v.demo);
+        setVerificationRequired(v.emailVerificationRequired);
+      })
       .catch(() => {});
   }, []);
   useEffect(() => {
@@ -67,6 +71,8 @@ export function AppProviders({ children }) {
         register,
         logout,
         demo,
+        emailVerificationRequired:
+          me.data?.emailVerificationRequired ?? verificationRequired,
         refresh: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
       }}
     >
